@@ -2,7 +2,6 @@
   "framework": "nextjs",
   "buildCommand": "npm run build",
   "installCommand": "npm ci",
-  "ignoreCommand": "git diff --quiet HEAD^ HEAD || echo 'build'",
   "regions": ["iad1"],
   "env": {
     "NEXTAUTH_URL": "https://your-domain.vercel.app",
