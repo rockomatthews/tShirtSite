@@ -3,8 +3,9 @@ import { Avatar, Box, Container, Grid, Tab, Tabs, Typography } from "@mui/materi
 import { ProductGrid } from "@/components/ProductGrid";
 import { approvedProducts } from "@/lib/mockData";
 
-export default function ProfilePage({ params }: { params: { handle: string } }) {
-  const handle = decodeURIComponent(params.handle);
+export default async function ProfilePage({ params }: { params: Promise<{ handle: string }> }) {
+  const { handle: raw } = await params;
+  const handle = decodeURIComponent(raw);
   return (
     <Container sx={{ py: 4 }}>
       <Box sx={{ display: "flex", alignItems: "center", gap: 2, mb: 3 }}>

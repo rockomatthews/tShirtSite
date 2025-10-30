@@ -2,8 +2,9 @@
 import { Box, Button, Container, Grid, Typography } from "@mui/material";
 import { approvedProducts } from "@/lib/mockData";
 
-export default function ProductDetail({ params }: { params: { slug: string } }) {
-  const product = approvedProducts.find((p) => p.slug === params.slug);
+export default async function ProductDetail({ params }: { params: Promise<{ slug: string }> }) {
+  const { slug } = await params;
+  const product = approvedProducts.find((p) => p.slug === slug);
   if (!product) return <Container sx={{ py: 4 }}><Typography>Product not found.</Typography></Container>;
   return (
     <Container sx={{ py: 4 }}>
