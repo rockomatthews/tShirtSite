@@ -1,0 +1,142 @@
+// Prisma schema (Postgres)
+generator client {
+    provider = "prisma-client-js"
+}
+
+datasource db {
+    provider = "postgresql"
+    url      = env("DATABASE_URL")
+}
+
+model User {
+    id            String   @id @default(cuid())
+    email         String   @unique
+    name          String?
+    image         String?
+    role          String   @default("user") // user|admin
+    solanaAddress String?
+    createdAt     DateTime @default(now())
+    updatedAt     DateTime @updatedAt
+    orders        Order[]
+    designs       Design[] @relation("DesignerDesigns")
+}
+
+model Design {
+    id                 String    @id @default(cuid())
+    title              String
+    description        String?
+    fileKey            String // S3 key
+    previewKey         String // S3 preview
+    status             String    @default("pending") // pending|approved|rejected
+    tags               String[]
+    creator            User      @relation("DesignerDesigns", fields: [creatorId], references: [id])
+    creatorId          String
+    creatorSharePct    Int       @default(50) // off-chain revenue share of store margin
+    onchainCreatorAddr String?
+    createdAt          DateTime  @default(now())
+    updatedAt          DateTime  @updatedAt
+    products           Product[]
+}
+
+model Product {
+    id                  String           @id @default(cuid())
+    slug                String           @unique
+    title               String
+    description         String?
+    design              Design           @relation(fields: [designId], references: [id])
+    designId            String
+    baseCost            Int // cents
+    markupPct           Int // percent
+    isActive            Boolean          @default(true)
+    // Printify integration
+    printifyBlueprintId Int?
+    providerId          String?
+    // Solana NFT fields
+    solanaCollection    String?
+    royaltyBps          Int? // e.g., 500 = 5%
+    nftStandard         String? // standard|compressed
+    maxSupply           Int              @default(100)
+    mintedCount         Int              @default(0)
+    variants            ProductVariant[]
+    createdAt           DateTime         @default(now())
+    updatedAt           DateTime         @updatedAt
+}
+
+model ProductVariant {
+    id                String      @id @default(cuid())
+    product           Product     @relation(fields: [productId], references: [id])
+    productId         String
+    printifyVariantId Int?
+    sku               String      @unique
+    size              String
+    color             String
+    CartItem          CartItem[]
+    OrderItem         OrderItem[]
+}
+
+model Cart {
+    id          String     @id @default(cuid())
+    userId      String?
+    anonymousId String?
+    currency    String     @default("USD")
+    items       CartItem[]
+    createdAt   DateTime   @default(now())
+    updatedAt   DateTime   @updatedAt
+}
+
+model CartItem {
+    id               String         @id @default(cuid())
+    cart             Cart           @relation(fields: [cartId], references: [id])
+    cartId           String
+    productVariant   ProductVariant @relation(fields: [productVariantId], references: [id])
+    productVariantId String
+    qty              Int
+    unitPrice        Int // cents
+}
+
+model Order {
+    id            String       @id @default(cuid())
+    user          User?        @relation(fields: [userId], references: [id])
+    userId        String?
+    status        String       @default("pending") // pending|paid|failed|fulfilled|cancelled
+    total         Int // cents
+    currency      String       @default("USD")
+    paymentMethod String?
+    externalIds   Json?
+    items         OrderItem[]
+    fulfillment   Fulfillment?
+    createdAt     DateTime     @default(now())
+    updatedAt     DateTime     @updatedAt
+}
+
+model OrderItem {
+    id               String         @id @default(cuid())
+    order            Order          @relation(fields: [orderId], references: [id])
+    orderId          String
+    productVariant   ProductVariant @relation(fields: [productVariantId], references: [id])
+    productVariantId String
+    qty              Int
+    unitPrice        Int
+    // NFT tracking
+    nftMintAddress   String?
+    nftTxnSignature  String?
+    nftStatus        String? // pending|minted|failed
+}
+
+model Fulfillment {
+    id       String @id @default(cuid())
+    order    Order  @relation(fields: [orderId], references: [id])
+    orderId  String @unique
+    provider String
+    status   String
+    tracking Json?
+}
+
+model WebhookLog {
+    id          String   @id @default(cuid())
+    source      String
+    eventType   String
+    payloadHash String
+    status      String
+    createdAt   DateTime @default(now())
+}
