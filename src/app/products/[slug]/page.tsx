@@ -1,6 +1,6 @@
 "use client";
 import { Box, Button, Container, Typography } from "@mui/material";
-import Grid2 from "@mui/material/Grid2";
+import Grid2 from "@mui/material/Unstable_Grid2";
 import { approvedProducts } from "@/lib/mockData";
 
 export default async function ProductDetail({ params }: { params: Promise<{ slug: string }> }) {

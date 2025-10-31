@@ -1,6 +1,6 @@
 "use client";
 import { Container, Box, Typography, Card, CardMedia, CardContent, Button } from "@mui/material";
-import Grid2 from "@mui/material/Grid2";
+import Grid2 from "@mui/material/Unstable_Grid2";
 import { ProductGrid } from "@/components/ProductGrid";
 import { featuredProduct, approvedProducts } from "@/lib/mockData";
 

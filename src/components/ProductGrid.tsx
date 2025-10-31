@@ -1,5 +1,5 @@
 "use client";
-import Grid2 from "@mui/material/Grid2";
+import Grid2 from "@mui/material/Unstable_Grid2";
 import { ProductCard } from "@/components/ProductCard";
 import type { Product } from "@/types";
 
