@@ -25,10 +25,10 @@ export default function Home() {
               {featuredProduct.description}
             </Typography>
             <Grid container spacing={2} alignItems="center">
-              <Grid item>
+              <Grid xs="auto">
                 <Typography variant="h6">${featuredProduct.price.toFixed(2)}</Typography>
               </Grid>
-              <Grid item>
+              <Grid xs="auto">
                 <Button variant="contained">View</Button>
               </Grid>
             </Grid>
