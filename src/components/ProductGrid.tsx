@@ -1,17 +1,17 @@
 "use client";
-import { Grid } from "@mui/material";
+import Grid2 from "@mui/material/Grid2";
 import { ProductCard } from "@/components/ProductCard";
 import type { Product } from "@/types";
 
 export function ProductGrid({ products }: { products: Product[] }) {
   return (
-    <Grid container spacing={2}>
+    <Grid2 container spacing={2}>
       {products.map((p) => (
-        <Grid key={p.id} xs={12} sm={6} md={4} lg={3}>
+        <Grid2 key={p.id} xs={12} sm={6} md={4} lg={3}>
           <ProductCard product={p} />
-        </Grid>
+        </Grid2>
       ))}
-    </Grid>
+    </Grid2>
   );
 }
 

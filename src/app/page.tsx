@@ -1,5 +1,6 @@
 "use client";
-import { Container, Box, Typography, Card, CardMedia, CardContent, Grid, Button } from "@mui/material";
+import { Container, Box, Typography, Card, CardMedia, CardContent, Button } from "@mui/material";
+import Grid2 from "@mui/material/Grid2";
 import { ProductGrid } from "@/components/ProductGrid";
 import { featuredProduct, approvedProducts } from "@/lib/mockData";
 
@@ -24,14 +25,14 @@ export default function Home() {
             <Typography color="text.secondary" sx={{ mb: 2 }}>
               {featuredProduct.description}
             </Typography>
-            <Grid container spacing={2} alignItems="center">
-              <Grid xs="auto">
+            <Grid2 container spacing={2} alignItems="center">
+              <Grid2 xs="auto">
                 <Typography variant="h6">${featuredProduct.price.toFixed(2)}</Typography>
-              </Grid>
-              <Grid xs="auto">
+              </Grid2>
+              <Grid2 xs="auto">
                 <Button variant="contained">View</Button>
-              </Grid>
-            </Grid>
+              </Grid2>
+            </Grid2>
           </CardContent>
         </Card>
       </Box>
