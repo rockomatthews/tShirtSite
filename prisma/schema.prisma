@@ -15,6 +15,7 @@ model User {
     image         String?
     role          String   @default("user") // user|admin
     solanaAddress String?
+    crossmintWalletAddress String?
     createdAt     DateTime @default(now())
     updatedAt     DateTime @updatedAt
     orders        Order[]
@@ -55,8 +56,11 @@ model Product {
     solanaCollection    String?
     royaltyBps          Int? // e.g., 500 = 5%
     nftStandard         String? // standard|compressed
-    maxSupply           Int              @default(100)
-    mintedCount         Int              @default(0)
+    // Edition caps (separate real vs virtual mints)
+    maxSupplyPhysical   Int              @default(100)
+    mintedPhysical      Int              @default(0)
+    maxSupplyVirtual    Int              @default(100)
+    mintedVirtual       Int              @default(0)
     variants            ProductVariant[]
     createdAt           DateTime         @default(now())
     updatedAt           DateTime         @updatedAt
