@@ -12,7 +12,8 @@
     "BITPAY_TOKEN": "set-in-vercel",
     "BITPAY_WEBHOOK_SECRET": "set-in-vercel",
     "PRINTIFY_API_KEY": "set-in-vercel",
-    "CROSSMINT_API_KEY": "set-in-vercel"
+    "CROSSMINT_API_KEY": "set-in-vercel",
+    "NEXT_PUBLIC_PRIVY_APP_ID": "set-in-vercel"
   }
 }
 

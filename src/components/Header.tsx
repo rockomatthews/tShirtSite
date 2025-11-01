@@ -34,7 +34,7 @@ export function Header() {
           {session.status === "authenticated" ? (
             <Button onClick={() => signOut()}>{session.data.user?.name ?? "Sign out"}</Button>
           ) : (
-            <Button onClick={() => signIn("google")}>Sign in</Button>
+            <Button component={Link} href="/login">Sign in</Button>
           )}
         </Stack>
       </Toolbar>

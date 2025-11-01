@@ -4,6 +4,7 @@ import "./globals.css";
 import { Header } from "@/components/Header";
 import { AuthProvider } from "@/components/AuthProvider";
 import { ThemeRegistry } from "@/components/ThemeRegistry";
+import { PrivyWrapper } from "@/components/PrivyWrapper";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -29,10 +30,12 @@ export default function RootLayout({
     <html lang="en">
       <body className={`${geistSans.variable} ${geistMono.variable}`}>
         <ThemeRegistry>
-          <AuthProvider>
-            <Header />
-            {children}
-          </AuthProvider>
+          <PrivyWrapper>
+            <AuthProvider>
+              <Header />
+              {children}
+            </AuthProvider>
+          </PrivyWrapper>
         </ThemeRegistry>
       </body>
     </html>
