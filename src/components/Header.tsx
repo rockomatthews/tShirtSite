@@ -4,7 +4,7 @@ import { AppBar, Toolbar, Typography, Box, Button, Stack, IconButton, Drawer, Li
 import { signIn, signOut, useSession } from "next-auth/react";
 import { ConnectWalletButton } from "@/components/ConnectWalletButton";
 import MenuIcon from "@mui/icons-material/Menu";
-import { useState } from "react";
+import { useState, useRef } from "react";
 
 export function Header() {
   const session = useSession();
