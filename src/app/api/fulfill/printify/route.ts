@@ -24,9 +24,10 @@ export async function POST(req: NextRequest) {
     if (!baseResp.ok) return new Response("base image fetch failed", { status: 400 });
     const baseBuf = Buffer.from(await baseResp.arrayBuffer());
     const composed = await composeSerialPng(baseBuf, serialNumber);
-    const blob = new Blob([composed], { type: "image/png" });
-    const composedFile = new File([blob], `serial-${serialNumber}.png`, { type: "image/png" });
-    const up = await uploadImageToPrintify(composedFile, composedFile.name);
+    const uint8 = new Uint8Array(composed.buffer, composed.byteOffset, composed.byteLength);
+    const blob = new Blob([uint8], { type: "image/png" });
+    const fileForUpload = new File([blob], `serial-${serialNumber}.png`, { type: "image/png" });
+    const up = await uploadImageToPrintify(fileForUpload, fileForUpload.name);
     uploadId = up.id;
   } else {
     return new Response("missing file or baseImageUrl+serialNumber", { status: 400 });
