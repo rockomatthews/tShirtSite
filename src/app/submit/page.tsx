@@ -11,9 +11,7 @@ export default function SubmitDesignPage() {
 
   return (
     <Container sx={{ py: 4 }}>
-      <Typography variant="h4" fontWeight={700} gutterBottom>
-        Submit a Design
-      </Typography>
+      <Typography variant="h4" fontWeight={700} gutterBottom>Design</Typography>
       <Typography color="text.secondary" sx={{ mb: 3 }}>
         If approved, your tee will be listed. Creators earn 50% of store margin per sale.
       </Typography>

@@ -43,7 +43,7 @@ export function Header() {
           {/* Desktop nav */}
           <Box sx={{ display: { xs: "none", md: "inline-flex" }, gap: 1 }}>
             <Button component={Link} href="/products">Products</Button>
-            <Button component={Link} href="/submit">Submit</Button>
+            <Button component={Link} href="/design">Design</Button>
             {isOwner && (
               <>
                 <Button component={Link} href="/designer">Designer</Button>
@@ -82,7 +82,7 @@ export function Header() {
         <Box role="presentation" sx={{ width: 280 }} onClick={close}>
           <List>
             <ListItemButton component={Link} href="/products"><ListItemText primary="Products" /></ListItemButton>
-            <ListItemButton component={Link} href="/submit"><ListItemText primary="Submit Art" /></ListItemButton>
+                <ListItemButton component={Link} href="/design"><ListItemText primary="Design" /></ListItemButton>
             <ListItemButton component={Link} href="/cart"><ListItemText primary="Cart" /></ListItemButton>
             {isOwner && (
               <>

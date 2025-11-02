@@ -22,6 +22,25 @@ export default function DesignerPage() {
   const [teeColor, setTeeColor] = useState<string>("#1f2937");
 
   const stageRef = useRef<HTMLDivElement>(null);
+  const [isDragging, setDragging] = useState(false);
+  const onPointerDown = (e: React.PointerEvent) => {
+    setDragging(true);
+    (e.target as Element).setPointerCapture?.(e.pointerId);
+  };
+  const onPointerMove = (e: React.PointerEvent) => {
+    if (!isDragging || !stageRef.current) return;
+    const rect = stageRef.current.getBoundingClientRect();
+    const nx = (e.clientX - rect.left) / rect.width;
+    const ny = (e.clientY - rect.top) / rect.height;
+    setX(Math.min(0.85, Math.max(0.15, nx)));
+    setY(Math.min(0.85, Math.max(0.2, ny)));
+  };
+  const onPointerUp = () => setDragging(false);
+  const onWheel = (e: React.WheelEvent) => {
+    e.preventDefault();
+    const delta = e.deltaY < 0 ? 0.04 : -0.04;
+    setScale((s) => Math.min(1.6, Math.max(0.2, s + delta)));
+  };
 
   // Heuristic color name mapping (extendable) for matching Printify variant names
   const COLOR_NAME_TO_HEX: Record<string, string> = {
@@ -143,20 +162,21 @@ export default function DesignerPage() {
             </Stack>
 
             <Typography variant="subtitle2">Preview</Typography>
-            <Box ref={stageRef} sx={{ width: 360, height: 450, mx: "auto", position: "relative", background: "#0b0c10", borderRadius: 2, overflow: "hidden" }}>
+            <Box ref={stageRef} onPointerMove={onPointerMove} onPointerUp={onPointerUp} onWheel={onWheel} sx={{ width: 360, height: 450, mx: "auto", position: "relative", background: "#0b0c10", borderRadius: 2, overflow: "hidden", touchAction: "none" }}>
               {/* Tee colored shape via mask */}
-              <Box sx={{ position: "absolute", inset: 0, bgcolor: teeColor, WebkitMask: 'url(/tshirt.svg) center / contain no-repeat', mask: 'url(/tshirt.svg) center / contain no-repeat' }} />
+              <Box sx={{ position: "absolute", inset: 0, bgcolor: teeColor, WebkitMask: 'url(/blackT.svg) center / contain no-repeat', mask: 'url(/blackT.svg) center / contain no-repeat' }} />
               {/* Tee outline on top */}
-              <Box component="img" src="/tshirt.svg" alt="tee" sx={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "contain", opacity: 0.6 }} />
+              <Box component="img" src="/blackT.svg" alt="tee" sx={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "contain", opacity: 0.6 }} />
               {/* artwork */}
               {fileUrl && (
-                <Box component="img" src={fileUrl} alt="art" sx={{
+                <Box component="img" src={fileUrl} alt="art" onPointerDown={onPointerDown} sx={{
                   position: "absolute",
                   left: `${x * 100}%`,
                   top: `${y * 100}%`,
                   transform: `translate(-50%,-50%) scale(${scale})`,
                   width: 260,
-                  pointerEvents: "none",
+                  pointerEvents: "auto",
+                  cursor: isDragging ? "grabbing" : "grab",
                 }} />
               )}
             </Box>
