@@ -25,7 +25,8 @@ export async function POST(req: NextRequest) {
     const baseBuf = Buffer.from(await baseResp.arrayBuffer());
     const composed = await composeSerialPng(baseBuf, serialNumber);
     const uint8 = new Uint8Array(composed.buffer, composed.byteOffset, composed.byteLength);
-    const blob = new Blob([uint8], { type: "image/png" });
+    const ab = uint8.buffer.slice(uint8.byteOffset, uint8.byteOffset + uint8.byteLength) as ArrayBuffer;
+    const blob = new Blob([ab], { type: "image/png" });
     const fileForUpload = new File([blob], `serial-${serialNumber}.png`, { type: "image/png" });
     const up = await uploadImageToPrintify(fileForUpload, fileForUpload.name);
     uploadId = up.id;
