@@ -1,5 +1,6 @@
 import NextAuth from "next-auth";
 import Google from "next-auth/providers/google";
+import { ensureEmailWallet } from "@/lib/crossmint";
 
 const authOptions = {
   providers: [
@@ -15,6 +16,14 @@ const authOptions = {
         (session as any).userId = token.sub;
       }
       return session;
+    },
+  },
+  events: {
+    async signIn(message: any) {
+      try {
+        const email: string | undefined = message?.user?.email;
+        if (email) await ensureEmailWallet({ email });
+      } catch {}
     },
   },
 };
