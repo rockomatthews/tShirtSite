@@ -1,6 +1,6 @@
 "use client";
 import Link from "next/link";
-import { AppBar, Toolbar, Typography, Box, Button, Stack, IconButton, Drawer, List, ListItemButton, ListItemText, Divider, Avatar } from "@mui/material";
+import { AppBar, Toolbar, Typography, Box, Button, Stack, IconButton, Drawer, List, ListItemButton, ListItemText, Divider, Avatar, Menu, MenuItem } from "@mui/material";
 import { signIn, signOut, useSession } from "next-auth/react";
 import { ConnectWalletButton } from "@/components/ConnectWalletButton";
 import MenuIcon from "@mui/icons-material/Menu";
@@ -12,6 +12,22 @@ export function Header() {
   const close = () => setOpen(false);
   const email = session.data?.user?.email ?? "";
   const isOwner = email.toLowerCase() === "rob@fastwebwork.com";
+  const [menuAnchor, setMenuAnchor] = useState<null | HTMLElement>(null);
+  const openMenu = Boolean(menuAnchor);
+  const onAvatarClick = (e: React.MouseEvent<HTMLElement>) => setMenuAnchor(e.currentTarget);
+  const onAvatarEnter = (e: React.MouseEvent<HTMLElement>) => setMenuAnchor(e.currentTarget);
+  const closeMenu = () => setMenuAnchor(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const onUploadClick = () => fileInputRef.current?.click();
+  const onFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const f = e.target.files?.[0];
+    if (!f) return;
+    const fd = new FormData();
+    fd.append("file", f);
+    await fetch("/api/profile/avatar", { method: "POST", body: fd });
+    closeMenu();
+    window.location.reload();
+  };
   return (
     <AppBar position="sticky" color="inherit" elevation={0} sx={{ borderBottom: 1, borderColor: "divider" }}>
       <Toolbar sx={{ gap: 2 }}>
@@ -39,9 +55,22 @@ export function Header() {
           </Box>
           {/* Auth */}
           {session.status === "authenticated" ? (
-            <IconButton component={Link} href="/profile" aria-label="profile">
-              <Avatar src={session.data.user?.image ?? undefined}>{(session.data.user?.name ?? "U").charAt(0)}</Avatar>
-            </IconButton>
+            <>
+              <IconButton aria-label="profile" onClick={onAvatarClick} onMouseEnter={onAvatarEnter}>
+                <Avatar src={session.data.user?.image ?? undefined}>{(session.data.user?.name ?? "U").charAt(0)}</Avatar>
+              </IconButton>
+              <Menu
+                anchorEl={menuAnchor}
+                open={openMenu}
+                onClose={closeMenu}
+                MenuListProps={{ onMouseLeave: closeMenu }}
+              >
+                <MenuItem component={Link} href="/profile" onClick={closeMenu}>Profile</MenuItem>
+                <MenuItem onClick={onUploadClick}>Upload photo</MenuItem>
+                <MenuItem onClick={() => { closeMenu(); signOut(); }}>Logout</MenuItem>
+              </Menu>
+              <input ref={fileInputRef} type="file" accept="image/*" hidden onChange={onFile} />
+            </>
           ) : (
             <Button component={Link} href="/login">Sign in</Button>
           )}

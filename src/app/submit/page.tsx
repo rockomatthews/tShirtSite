@@ -6,6 +6,8 @@ export default function SubmitDesignPage() {
   const [title, setTitle] = useState("");
   const [file, setFile] = useState<File | null>(null);
   const [desc, setDesc] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [done, setDone] = useState<string | null>(null);
 
   return (
     <Container sx={{ py: 4 }}>
@@ -15,7 +17,19 @@ export default function SubmitDesignPage() {
       <Typography color="text.secondary" sx={{ mb: 3 }}>
         If approved, your tee will be listed. Creators earn 50% of store margin per sale.
       </Typography>
-      <Stack spacing={2} component="form" onSubmit={(e) => e.preventDefault()}>
+      <Stack spacing={2} component="form" onSubmit={async (e) => {
+        e.preventDefault();
+        if (!file) return;
+        setBusy(true);
+        const fd = new FormData();
+        fd.append("title", title);
+        fd.append("description", desc);
+        fd.append("file", file);
+        const res = await fetch("/api/designs/upload", { method: "POST", body: fd });
+        const out = await res.json().catch(() => ({}));
+        setBusy(false);
+        if (res.ok) setDone(out.id ?? "ok");
+      }}>
         <TextField label="Title" value={title} onChange={(e) => setTitle(e.target.value)} required />
         <TextField label="Description" value={desc} onChange={(e) => setDesc(e.target.value)} multiline minRows={3} />
         <Button variant="outlined" component="label">
@@ -24,9 +38,10 @@ export default function SubmitDesignPage() {
         </Button>
         {file && <Box color="text.secondary">Selected: {file.name}</Box>}
         <Stack direction="row" gap={2}>
-          <Button type="submit" variant="contained">Submit for Review</Button>
+          <Button type="submit" variant="contained" disabled={!file || busy}>{busy ? "Uploading..." : "Submit for Review"}</Button>
           <Button href="/u/%40you" variant="text">Preview Profile</Button>
         </Stack>
+        {done && <Typography color="success.main">Uploaded! Design id: {done}</Typography>}
       </Stack>
     </Container>
   );

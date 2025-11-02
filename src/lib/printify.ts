@@ -11,6 +11,7 @@ export async function printifyRequest(path: string, init?: RequestInit) {
     headers: {
       "Content-Type": "application/json",
       Authorization: `Bearer ${key}`,
+      "User-Agent": "tShirtStore/1.0 (+https://vercel.app)",
       ...(init?.headers ?? {}),
     },
     cache: "no-store",
