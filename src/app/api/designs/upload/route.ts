@@ -29,13 +29,26 @@ export async function POST(req: NextRequest) {
     const placement = String(form.get("placement") ?? "{}");
     if (!file) return new Response("File required", { status: 400 });
 
-    const uploaded = await uploadImageToPrintify(file, file.name || "art.png");
+    let fileKey: string;
+    let previewKey: string;
+    try {
+      const uploaded = await uploadImageToPrintify(file, file.name || "art.png");
+      fileKey = `printify:${uploaded.id}`;
+      previewKey = fileKey;
+    } catch {
+      // Fallback: inline data URL so uploads don’t hard fail for customers
+      const buf = Buffer.from(await file.arrayBuffer());
+      const mime = file.type || "image/png";
+      const dataUrl = `data:${mime};base64,${buf.toString("base64")}`;
+      fileKey = dataUrl;
+      previewKey = dataUrl;
+    }
     const design = await db.design.create({
       data: {
         title,
         description,
-        fileKey: `printify:${uploaded.id}`,
-        previewKey: `printify:${uploaded.id}`,
+        fileKey,
+        previewKey,
         creatorId: userId,
         status: "pending",
         tags: ["placement:" + placement],
