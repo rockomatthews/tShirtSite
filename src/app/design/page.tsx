@@ -128,6 +128,4 @@ export default function DesignPage() {
   );
 }
 
-export { default } from "@/app/(admin)/designer/page";
-
-
+ 
