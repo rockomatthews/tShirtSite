@@ -42,12 +42,12 @@ export function Header() {
         <Stack direction="row" spacing={1}>
           {/* Desktop nav */}
           <Box sx={{ display: { xs: "none", md: "inline-flex" }, gap: 1 }}>
-            <Button component={Link} href="/products">Products</Button>
+            <Button component={Link} href="/shop">Shop</Button>
             <Button component={Link} href="/design">Design</Button>
             {isOwner && (
               <>
-                <Button component={Link} href="/designer">Designer</Button>
                 <Button component={Link} href="/products/new">Admin</Button>
+                <Button component={Link} href="/designs">Reviews</Button>
               </>
             )}
             <Button component={Link} href="/cart">Cart</Button>
@@ -81,13 +81,13 @@ export function Header() {
       <Drawer open={open} onClose={close} sx={{ display: { xs: "block", md: "none" } }}>
         <Box role="presentation" sx={{ width: 280 }} onClick={close}>
           <List>
-            <ListItemButton component={Link} href="/products"><ListItemText primary="Products" /></ListItemButton>
+            <ListItemButton component={Link} href="/shop"><ListItemText primary="Shop" /></ListItemButton>
                 <ListItemButton component={Link} href="/design"><ListItemText primary="Design" /></ListItemButton>
             <ListItemButton component={Link} href="/cart"><ListItemText primary="Cart" /></ListItemButton>
             {isOwner && (
               <>
-                <ListItemButton component={Link} href="/designer"><ListItemText primary="Designer" /></ListItemButton>
                 <ListItemButton component={Link} href="/products/new"><ListItemText primary="Admin" /></ListItemButton>
+                <ListItemButton component={Link} href="/designs"><ListItemText primary="Reviews" /></ListItemButton>
               </>
             )}
             {session.status === "authenticated" && (
