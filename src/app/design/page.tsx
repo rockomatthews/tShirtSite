@@ -1,8 +1,10 @@
 "use client";
 import { Box, Button, Card, CardContent, CardHeader, Container, Stack, Typography } from "@mui/material";
+import { useSession } from "next-auth/react";
 import { useEffect, useMemo, useRef, useState } from "react";
 
 export default function DesignPage() {
+  const session = useSession();
   const [fileUrl, setFileUrl] = useState<string>("");
   const [fileObj, setFileObj] = useState<File | null>(null);
   const [artNaturalW, setArtNaturalW] = useState<number>(0);
@@ -91,6 +93,12 @@ export default function DesignPage() {
       <Card>
         <CardHeader title="Design a Tee" subheader="Upload art, drag to place, then submit for review" />
         <CardContent>
+          {session.status !== "authenticated" ? (
+            <Stack spacing={2}>
+              <Typography variant="body2">Please sign in to submit a T‑Shirt.</Typography>
+              <Button href="/login" variant="contained">Sign in</Button>
+            </Stack>
+          ) : (
           <Stack spacing={3}>
             <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
               <Button component="label" variant="outlined">Upload Artwork<input type="file" accept="image/*" hidden onChange={onFile} /></Button>
@@ -121,6 +129,7 @@ export default function DesignPage() {
 
             <Button variant="contained" onClick={submit} disabled={!fileUrl}>Submit TShirt</Button>
           </Stack>
+          )}
         </CardContent>
       </Card>
     </Container>

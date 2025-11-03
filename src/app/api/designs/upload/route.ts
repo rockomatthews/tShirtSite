@@ -7,7 +7,14 @@ import { authOptions } from "@/lib/authOptions";
 export async function POST(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions as any).catch(() => null);
-    const userId: string | undefined = (session as any)?.user?.id;
+    let userId: string | undefined = (session as any)?.user?.id;
+    if (!userId) {
+      const email = (session as any)?.user?.email ?? null;
+      if (email) {
+        const u = await db.user.findUnique({ where: { email: String(email) } }).catch(() => null);
+        userId = u?.id;
+      }
+    }
     if (!userId) return new Response("Unauthorized", { status: 401 });
 
     const form = await req.formData();
