@@ -19,7 +19,7 @@ export default function DesignerPage() {
   const [x, setX] = useState(0.5);
   const [y, setY] = useState(0.35);
   const [scale, setScale] = useState(0.5);
-  const [teeColor, setTeeColor] = useState<string>("#1f2937");
+  const teeColor = "#000000";
 
   const stageRef = useRef<HTMLDivElement>(null);
   const [isDragging, setDragging] = useState(false);
@@ -102,16 +102,16 @@ export default function DesignerPage() {
     return map;
   }, [variants]);
 
-  // When teeColor changes, auto-pick a color group whose hex matches
+  // Always pick black variants automatically when available
   useEffect(() => {
-    // find closest by hex equality first
-    for (const [name, entry] of colorGroups.entries()) {
-      if (entry.hex.toLowerCase() === teeColor.toLowerCase()) {
-        setVariantIds(entry.ids);
-        return;
-      }
+    const entry = colorGroups.get("black");
+    if (entry) {
+      setVariantIds(entry.ids);
+      setSelectedColor("black");
+      const sorted = SIZE_ORDER.filter((s) => entry.sizes[s]);
+      setSelectedSizes(sorted);
     }
-  }, [teeColor, colorGroups]);
+  }, [colorGroups]);
 
   const [selectedColor, setSelectedColor] = useState<string | null>(null);
   const [selectedSizes, setSelectedSizes] = useState<string[]>([]);
@@ -155,10 +155,7 @@ export default function DesignerPage() {
                 {(providers?.data ?? []).map((p: any) => (<MenuItem key={p.id} value={String(p.id)}>{p.attributes?.title ?? p.title}</MenuItem>))}
               </Select>
               <Button component="label" variant="outlined">Upload Artwork<input type="file" accept="image/*" hidden onChange={onFile} /></Button>
-              <Button component="label" variant="outlined">
-                Tee Color
-                <input hidden type="color" value={teeColor} onChange={(e) => setTeeColor(e.target.value)} />
-              </Button>
+              {/* Color fixed to black */}
             </Stack>
 
             <Typography variant="subtitle2">Preview</Typography>
@@ -186,35 +183,7 @@ export default function DesignerPage() {
               <Button variant="outlined" onClick={() => setY((v) => Math.max(0.2, v - 0.02))}>Up</Button>
               <Button variant="outlined" onClick={() => setY((v) => Math.min(0.8, v + 0.02))}>Down</Button>
             </Stack>
-            <Box>
-              <Typography variant="subtitle2" gutterBottom>Variants</Typography>
-              <Stack direction="row" spacing={1} sx={{ flexWrap: "wrap" }}>
-                {[...colorGroups.entries()].map(([name, entry]) => (
-                  <Tooltip key={name} title={name}>
-                    <Button
-                      size="small"
-                      variant={entry.ids.every((id) => variantIds.includes(id)) ? "contained" : "outlined"}
-                      onClick={() => {
-                        setVariantIds(entry.ids);
-                        setTeeColor(entry.hex);
-                        setSelectedColor(name);
-                        const sorted = SIZE_ORDER.filter((s) => entry.sizes[s]);
-                        setSelectedSizes(sorted);
-                      }}
-                      sx={{
-                        minWidth: 28,
-                        width: 28,
-                        height: 28,
-                        p: 0,
-                        borderColor: entry.hex,
-                        backgroundColor: entry.hex,
-                        color: "#000",
-                      }}
-                    />
-                  </Tooltip>
-                ))}
-              </Stack>
-            </Box>
+            {/* Color fixed to black; size selection shown below */}
 
             {selectedColor && (
               <Box>

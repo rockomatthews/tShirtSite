@@ -8,11 +8,11 @@ export default function ReviewDesignsPage() {
   const { data, mutate } = useSWR("/api/admin/designs/list", fetcher);
   const pending = data?.designs ?? [];
 
-  const approve = async (id: string, color: string, physical: number, virtual: number) => {
+  const approve = async (id: string, physical: number, virtual: number) => {
     await fetch(`/api/admin/designs/${id}/approve`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ color, maxSupplyPhysical: physical, maxSupplyVirtual: virtual }),
+      body: JSON.stringify({ maxSupplyPhysical: physical, maxSupplyVirtual: virtual }),
     });
     mutate();
   };
@@ -33,10 +33,8 @@ export default function ReviewDesignsPage() {
                 <Box component="img" src={d.previewKey?.startsWith("data:") ? d.previewKey : undefined} alt="preview" sx={{ width: 140, height: 140, objectFit: "cover", borderRadius: 1, bgcolor: "#111" }} />
                 <TextField label="Mint (Physical)" type="number" defaultValue={100} id={`phys-${d.id}`} sx={{ maxWidth: 200 }} />
                 <TextField label="Mint (Virtual)" type="number" defaultValue={100} id={`virt-${d.id}`} sx={{ maxWidth: 200 }} />
-                <Button component="label" variant="outlined">Color<input hidden type="color" id={`color-${d.id}`} /></Button>
                 <Button variant="contained" onClick={() => approve(
                   d.id,
-                  (document.getElementById(`color-${d.id}`) as HTMLInputElement)?.value || "#111111",
                   Number((document.getElementById(`phys-${d.id}`) as HTMLInputElement)?.value || 100),
                   Number((document.getElementById(`virt-${d.id}`) as HTMLInputElement)?.value || 100),
                 )}>Approve</Button>
