@@ -52,7 +52,7 @@ export default function NewProductPage() {
     setX(c.x); setY(c.y);
   };
   const onPointerUp = () => setDragging(false);
-  const onWheel = (e: React.WheelEvent) => { e.preventDefault(); const d = e.deltaY < 0 ? 0.04 : -0.04; setScale((s) => Math.min(1.6, Math.max(0.2, s + d))); };
+  const onWheel = (e: React.WheelEvent) => { const d = e.deltaY < 0 ? 0.04 : -0.04; setScale((s) => Math.min(1.6, Math.max(0.2, s + d))); };
 
   const submit = async () => {
     if (!fileObj || !title || !slug || sizes.length === 0) return;

@@ -66,7 +66,6 @@ export default function DesignPage() {
   };
   const onPointerUp = () => setDragging(false);
   const onWheel = (e: React.WheelEvent) => {
-    e.preventDefault();
     const delta = e.deltaY < 0 ? 0.04 : -0.04;
     setScale((prev) => {
       const next = Math.min(1.6, Math.max(0.2, prev + delta));

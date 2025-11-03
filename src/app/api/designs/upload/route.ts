@@ -5,27 +5,34 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/authOptions";
 
 export async function POST(req: NextRequest) {
-  const session = await getServerSession(authOptions as any).catch(() => null);
-  const userId = (session as any)?.userId ?? null;
-  const form = await req.formData();
-  const title = String(form.get("title") ?? "Untitled Design");
-  const description = String(form.get("description") ?? "");
-  const file = form.get("file") as File | null;
-  if (!file || !userId) return new Response("Unauthorized or bad request", { status: 400 });
+  try {
+    const session = await getServerSession(authOptions as any).catch(() => null);
+    const userId: string | undefined = (session as any)?.user?.id;
+    if (!userId) return new Response("Unauthorized", { status: 401 });
 
-  const uploaded = await uploadImageToPrintify(file, file.name || "art.png");
-  const design = await db.design.create({
-    data: {
-      title,
-      description,
-      fileKey: `printify:${uploaded.id}`,
-      previewKey: `printify:${uploaded.id}`,
-      creatorId: userId,
-      status: "pending",
-      tags: [],
-    },
-  });
-  return Response.json({ id: design.id });
+    const form = await req.formData();
+    const title = String(form.get("title") ?? "Untitled Design");
+    const description = String(form.get("description") ?? "");
+    const file = form.get("file") as File | null;
+    const placement = String(form.get("placement") ?? "{}");
+    if (!file) return new Response("File required", { status: 400 });
+
+    const uploaded = await uploadImageToPrintify(file, file.name || "art.png");
+    const design = await db.design.create({
+      data: {
+        title,
+        description,
+        fileKey: `printify:${uploaded.id}`,
+        previewKey: `printify:${uploaded.id}`,
+        creatorId: userId,
+        status: "pending",
+        tags: ["placement:" + placement],
+      },
+    });
+    return Response.json({ id: design.id });
+  } catch (e: any) {
+    return new Response(`Upload failed: ${e?.message ?? "unknown"}`, { status: 502 });
+  }
 }
 
 

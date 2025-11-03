@@ -1,0 +1,57 @@
+import { NextRequest } from "next/server";
+import { verifyCoinbaseWebhook } from "@/lib/coinbase";
+import { db } from "@/lib/db";
+import { getDefaultShopId, createPrintifyOrder } from "@/lib/printify";
+
+export const dynamic = "force-dynamic";
+
+export async function POST(req: NextRequest) {
+  const raw = await req.text();
+  const sig = req.headers.get("x-cc-webhook-signature") || req.headers.get("X-CC-Webhook-Signature") || "";
+  try {
+    if (!verifyCoinbaseWebhook(raw, sig)) return new Response("invalid signature", { status: 400 });
+  } catch {
+    return new Response("webhook verify failed", { status: 400 });
+  }
+  const event = JSON.parse(raw);
+  const type: string = event?.event?.type ?? "";
+  const metadata = event?.event?.data?.metadata ?? {};
+  const orderId: string | undefined = metadata?.orderId;
+  if (!orderId) return new Response("ok", { status: 200 });
+
+  if (type === "charge:confirmed" || type === "charge:resolved") {
+    const order = await db.order.findUnique({ where: { id: orderId }, include: { items: { include: { productVariant: { include: { product: { include: { design: true } } } } } } } });
+    if (!order) return new Response("ok", { status: 200 });
+    // Mark paid
+    await db.order.update({ where: { id: orderId }, data: { status: "paid" } });
+
+    // Attempt Printify fulfillment for first item
+    const item = order.items[0];
+    const product = item.productVariant.product;
+    const variant = item.productVariant;
+    const placementTag = (product.design.tags ?? []).find((t) => t.startsWith("placement:"));
+    const productTag = (product.design.tags ?? []).find((t) => t.startsWith("printify_product:"));
+    const placement = placementTag ? JSON.parse(placementTag.replace("placement:", "")) : { x: 0.5, y: 0.38, scale: 0.5 };
+    const printifyProductId = productTag ? productTag.replace("printify_product:", "") : "";
+    const recipient = (order.externalIds as any)?.recipient ?? {};
+    if (printifyProductId && variant.printifyVariantId) {
+      const shopId = await getDefaultShopId();
+      try {
+        await createPrintifyOrder({
+          shopId,
+          productId: printifyProductId,
+          variantId: Number(variant.printifyVariantId),
+          quantity: item.qty,
+          imageId: String(product.design.fileKey).replace("printify:", ""),
+          placement,
+          recipient,
+        });
+      } catch (e) {
+        // swallow, webhook already acknowledged
+      }
+    }
+  }
+  return new Response("ok", { status: 200 });
+}
+
+
