@@ -7,12 +7,17 @@ import { authOptions } from "@/lib/authOptions";
 export async function POST(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions as any).catch(() => null);
-    let userId: string | undefined = (session as any)?.user?.id;
+    const sessUser = (session as any)?.user ?? {};
+    let userId: string | undefined = (session as any)?.userId || sessUser?.id;
     if (!userId) {
-      const email = (session as any)?.user?.email ?? null;
+      const email: string | undefined = sessUser?.email;
       if (email) {
-        const u = await db.user.findUnique({ where: { email: String(email) } }).catch(() => null);
-        userId = u?.id;
+        const u = await db.user.upsert({
+          where: { email },
+          update: { name: sessUser?.name ?? undefined, image: sessUser?.image ?? undefined },
+          create: { email, name: sessUser?.name ?? null, image: sessUser?.image ?? null, role: "user" },
+        });
+        userId = u.id;
       }
     }
     if (!userId) return new Response("Unauthorized", { status: 401 });
