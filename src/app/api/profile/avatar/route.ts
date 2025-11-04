@@ -26,10 +26,16 @@ export async function POST(req: NextRequest) {
     if (!userId) return new Response("unauthorized", { status: 401 });
 
     const form = await req.formData();
+    const fileUrl = form.get("imageUrl") as string | null;
     const file = form.get("file") as File | null;
-    if (!file) return new Response("bad request", { status: 400 });
+    if (!file && !fileUrl) return new Response("bad request", { status: 400 });
 
-    const raw = new Uint8Array(await file.arrayBuffer());
+    if (fileUrl && /^https?:\/\//.test(fileUrl)) {
+      await db.user.update({ where: { id: userId }, data: { image: fileUrl } });
+      return Response.json({ ok: true });
+    }
+
+    const raw = new Uint8Array(await (file as File).arrayBuffer());
     let outMime = (file.type || "image/png").toLowerCase();
     if (!/^(image\/png|image\/jpeg|image\/webp)$/.test(outMime)) outMime = "image/png";
     let out: Buffer;

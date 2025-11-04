@@ -30,54 +30,60 @@ export async function POST(req: NextRequest) {
     const form = await req.formData();
     const title = String(form.get("title") ?? "Untitled Design");
     const description = String(form.get("description") ?? "");
-    const file = form.get("file") as File | null;
     const placementRaw = String(form.get("placement") ?? "{}");
-    if (!file) return new Response("File required", { status: 400 });
 
-    // Store submission only for admin review; limit payload size
-    const raw = new Uint8Array(await file.arrayBuffer());
-    const tooLarge = raw.byteLength > 6_000_000; // ~6MB guard
-    // Always convert to WebP and cap width for storage+transport
-    let previewBytes: Buffer;
-    try {
-      const pipeline = sharp(Buffer.from(raw)).rotate().resize({ width: tooLarge ? 1280 : 1280, withoutEnlargement: true });
-      previewBytes = await pipeline.webp({ quality: 80 }).toBuffer();
-    } catch {
-      previewBytes = Buffer.from(raw);
-    }
-    let fileKey: string;
-    let previewKey: string;
-    try {
-      // Prefer Vercel Blob if token configured
-      if (process.env.BLOB_READ_WRITE_TOKEN) {
-        const filename = `designs/${Date.now()}-${Math.random().toString(36).slice(2)}.webp`;
-        const putRes = await blobPut(filename, previewBytes, { access: "public", contentType: "image/webp" });
-        fileKey = putRes.url;
-        previewKey = putRes.url;
-      } else {
+    // Preferred: direct-to-Blob upload passes a URL
+    const incomingFileUrl = form.get("fileUrl") as string | null;
+    let fileKey: string | undefined;
+    let previewKey: string | undefined;
+
+    if (incomingFileUrl && /^https?:\/\//.test(incomingFileUrl)) {
+      fileKey = incomingFileUrl;
+      previewKey = incomingFileUrl;
+    } else {
+      const file = form.get("file") as File | null;
+      if (!file) return new Response("File required", { status: 400 });
+
+      // Store submission only for admin review; convert to webp unless Blob token is set
+      const raw = new Uint8Array(await file.arrayBuffer());
+      const tooLarge = raw.byteLength > 6_000_000; // ~6MB guard
+      let previewBytes: Buffer;
+      try {
+        const pipeline = sharp(Buffer.from(raw)).rotate().resize({ width: tooLarge ? 1280 : 1280, withoutEnlargement: true });
+        previewBytes = await pipeline.webp({ quality: 80 }).toBuffer();
+      } catch {
+        previewBytes = Buffer.from(raw);
+      }
+
+      try {
+        if (process.env.BLOB_READ_WRITE_TOKEN) {
+          const filename = `designs/${Date.now()}-${Math.random().toString(36).slice(2)}.webp`;
+          const putRes = await blobPut(filename, previewBytes, { access: "public", contentType: "image/webp" });
+          fileKey = putRes.url;
+          previewKey = putRes.url;
+        } else {
+          const dataUrl = `data:image/webp;base64,${previewBytes.toString("base64")}`;
+          fileKey = dataUrl;
+          previewKey = dataUrl;
+        }
+      } catch {
         const dataUrl = `data:image/webp;base64,${previewBytes.toString("base64")}`;
         fileKey = dataUrl;
         previewKey = dataUrl;
       }
-    } catch {
-      const dataUrl = `data:image/webp;base64,${previewBytes.toString("base64")}`;
-      fileKey = dataUrl;
-      previewKey = dataUrl;
     }
 
     // We keep placement inside tags for now to avoid DB migration timing issues
     const placementTag = `placement:${placementRaw}`;
-    const sizeTag = `bytes:${raw.byteLength}`;
-    const originalTag = tooLarge ? "needsOriginalOnApproval:true" : "needsOriginalOnApproval:false";
     const design = await db.design.create({
       data: {
         title,
         description,
-        fileKey,
-        previewKey,
+        fileKey: fileKey!,
+        previewKey: previewKey!,
         creatorId: userId,
         status: "pending",
-        tags: [placementTag, sizeTag, originalTag],
+        tags: [placementTag],
       },
     });
     return Response.json({ id: design.id });
