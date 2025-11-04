@@ -19,9 +19,18 @@ export async function POST(req: NextRequest) {
     const minted = isVirtual ? product.mintedVirtual : product.mintedPhysical;
     if (cap !== null && minted + needed > cap) return new Response("sold out", { status: 409 });
 
-    const to = recipient ?? email; // server will resolve email to wallet in crossmintMint in future
+    const to = recipient ?? email; // crossmintMint will format email: prefix
     if (!to) return new Response("recipient missing", { status: 400 });
-    const out = await crossmintMint({ orderItemId, recipient: to });
+    const collectionId = product.solanaCollection;
+    if (!collectionId) return new Response("collection missing", { status: 400 });
+    const meta = {
+      name: `${product.title}`,
+      description: product.description ?? undefined,
+      attributes: [
+        { trait_type: "Mint Type", value: isVirtual ? "Virtual" : "Physical" },
+      ],
+    } as any;
+    const out = await crossmintMint({ collectionId, recipient: to, metadata: meta });
 
     // Persist simplistic success; in production, use values from Crossmint response
     await db.$transaction([
