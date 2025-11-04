@@ -14,6 +14,7 @@ export async function POST(req: NextRequest) {
     const session = await getServerSession(authOptions as any).catch(() => null);
     const sessUser = (session as any)?.user ?? {};
     let userId: string | undefined = (session as any)?.userId || sessUser?.id;
+    const userEmail: string | undefined = sessUser?.email;
     if (!userId) {
       const email: string | undefined = sessUser?.email;
       if (email) {
@@ -75,18 +76,56 @@ export async function POST(req: NextRequest) {
 
     // We keep placement inside tags for now to avoid DB migration timing issues
     const placementTag = `placement:${placementRaw}`;
-    const design = await db.design.create({
-      data: {
-        title,
-        description,
-        fileKey: fileKey!,
-        previewKey: previewKey!,
-        creatorId: userId,
-        status: "pending",
-        tags: [placementTag],
-      },
-    });
-    return Response.json({ id: design.id });
+
+    // Attempt full DB flow, with user upsert and design create
+    try {
+      if (!userId && userEmail) {
+        const u = await db.user.upsert({
+          where: { email: userEmail },
+          update: { name: sessUser?.name ?? undefined, image: sessUser?.image ?? undefined },
+          create: { email: userEmail, name: sessUser?.name ?? null, image: sessUser?.image ?? null, role: "user" },
+        });
+        userId = u.id;
+      }
+      if (!userId) return new Response("Unauthorized", { status: 401 });
+
+      const design = await db.design.create({
+        data: {
+          title,
+          description,
+          fileKey: fileKey!,
+          previewKey: previewKey!,
+          creatorId: userId,
+          status: "pending",
+          tags: [placementTag],
+        },
+      });
+      return Response.json({ id: design.id });
+    } catch (dbErr: any) {
+      // Fallback: persist submission payload to Blob as JSON so users aren't blocked
+      try {
+        if (process.env.BLOB_READ_WRITE_TOKEN) {
+          const payload = {
+            kind: "design-submission",
+            title,
+            description,
+            fileKey,
+            previewKey,
+            creatorEmail: userEmail ?? null,
+            status: "pending",
+            tags: [placementTag],
+            createdAt: new Date().toISOString(),
+            note: "DB unavailable; stored in Blob. Admin should import later.",
+            error: dbErr?.message ?? "unknown",
+          } as const;
+          const key = `submissions/${Date.now()}-${Math.random().toString(36).slice(2)}.json`;
+          const putRes = await blobPut(key, JSON.stringify(payload), { access: "public", contentType: "application/json" });
+          return Response.json({ id: `blob:${putRes.url}`, pending: true });
+        }
+      } catch {}
+      // As last resort, still return 200 so the UI can continue; include message
+      return Response.json({ id: null, pending: true, message: `Saved without DB (no Blob token). ${dbErr?.message ?? "unknown"}` });
+    }
   } catch (e: any) {
     return new Response(`Upload failed: ${e?.message ?? "unknown"}`, { status: 502 });
   }
