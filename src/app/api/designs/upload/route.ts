@@ -1,8 +1,9 @@
 import { NextRequest } from "next/server";
 import { db } from "@/lib/db";
-import { uploadImageToPrintify } from "@/lib/printify";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/authOptions";
+
+export const runtime = "nodejs";
 
 export async function POST(req: NextRequest) {
   try {
@@ -26,22 +27,21 @@ export async function POST(req: NextRequest) {
     const title = String(form.get("title") ?? "Untitled Design");
     const description = String(form.get("description") ?? "");
     const file = form.get("file") as File | null;
-    const placement = String(form.get("placement") ?? "{}");
+    const placementRaw = String(form.get("placement") ?? "{}");
     if (!file) return new Response("File required", { status: 400 });
 
-    let fileKey: string;
-    let previewKey: string;
+    // Store submission only for admin review; no external calls here
+    const buf = Buffer.from(await file.arrayBuffer());
+    const mime = file.type || "image/png";
+    const dataUrl = `data:${mime};base64,${buf.toString("base64")}`;
+    const fileKey = dataUrl;
+    const previewKey = dataUrl;
+
+    let placement: any = {};
     try {
-      const uploaded = await uploadImageToPrintify(file, file.name || "art.png");
-      fileKey = `printify:${uploaded.id}`;
-      previewKey = fileKey;
+      placement = JSON.parse(placementRaw);
     } catch {
-      // Fallback: inline data URL so uploads don’t hard fail for customers
-      const buf = Buffer.from(await file.arrayBuffer());
-      const mime = file.type || "image/png";
-      const dataUrl = `data:${mime};base64,${buf.toString("base64")}`;
-      fileKey = dataUrl;
-      previewKey = dataUrl;
+      placement = {};
     }
     const design = await db.design.create({
       data: {
@@ -51,7 +51,7 @@ export async function POST(req: NextRequest) {
         previewKey,
         creatorId: userId,
         status: "pending",
-        tags: ["placement:" + placement],
+        placement,
       },
     });
     return Response.json({ id: design.id });
