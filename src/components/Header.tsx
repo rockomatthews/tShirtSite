@@ -44,7 +44,7 @@ export function Header() {
           <MenuIcon />
         </IconButton>
         <Box component={Link} href="/" sx={{ display: { xs: "none", md: "inline-flex" }, alignItems: "center" }}>
-          <Box component="img" src="/hanger.png" alt="HANGER.Graphics" sx={{ height: 36, width: "auto" }} />
+          <Box component="img" src="/hangerSolo.png" alt="HANGER.Graphics" sx={{ height: 36, width: "auto" }} />
         </Box>
         <Box sx={{ flexGrow: 1 }} />
         <Stack direction="row" spacing={1}>
