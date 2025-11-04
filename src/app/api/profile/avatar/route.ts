@@ -35,7 +35,8 @@ export async function POST(req: NextRequest) {
       return Response.json({ ok: true });
     }
 
-    const raw = new Uint8Array(await (file as File).arrayBuffer());
+    if (!file) return new Response("bad request", { status: 400 });
+    const raw = new Uint8Array(await file.arrayBuffer());
     let outMime = (file.type || "image/png").toLowerCase();
     if (!/^(image\/png|image\/jpeg|image\/webp)$/.test(outMime)) outMime = "image/png";
     let out: Buffer;
