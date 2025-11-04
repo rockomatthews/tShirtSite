@@ -22,15 +22,24 @@ export function Header() {
   const onFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const f = e.target.files?.[0];
     if (!f) return;
-    const uploadRes = await fetch(`/api/uploads/blob?filename=${encodeURIComponent(f.name)}`, {
-      method: "POST",
-      headers: { "content-type": f.type || "application/octet-stream" },
-      body: f,
-    });
-    if (uploadRes.ok) {
-      const { url } = await uploadRes.json();
+    let ok = false;
+    try {
+      const uploadRes = await fetch(`/api/uploads/blob?filename=${encodeURIComponent(f.name)}`, {
+        method: "POST",
+        headers: { "content-type": f.type || "application/octet-stream" },
+        body: f,
+      });
+      if (uploadRes.ok) {
+        const { url } = await uploadRes.json();
+        const fd = new FormData();
+        fd.append("imageUrl", url);
+        await fetch("/api/profile/avatar", { method: "POST", body: fd });
+        ok = true;
+      }
+    } catch {}
+    if (!ok) {
       const fd = new FormData();
-      fd.append("imageUrl", url);
+      fd.append("file", f);
       await fetch("/api/profile/avatar", { method: "POST", body: fd });
     }
     closeMenu();

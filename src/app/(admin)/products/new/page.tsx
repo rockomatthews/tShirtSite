@@ -5,7 +5,7 @@ import { useMemo, useRef, useState } from "react";
 export default function NewProductPage() {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
-  const [markupPct, setMarkupPct] = useState<number>(50);
+  const [price, setPrice] = useState<string>("");
   const [maxPhysical, setMaxPhysical] = useState<number>(100);
   const [maxVirtual, setMaxVirtual] = useState<number>(100);
   const [fileUrl, setFileUrl] = useState<string>("");
@@ -59,7 +59,7 @@ export default function NewProductPage() {
     const fd = new FormData();
     fd.append("title", title);
     fd.append("description", description);
-    fd.append("markupPct", String(markupPct));
+    if (price) fd.append("price", price);
     fd.append("maxSupplyPhysical", String(maxPhysical));
     fd.append("maxSupplyVirtual", String(maxVirtual));
     fd.append("sizes", JSON.stringify(sizes));
@@ -78,7 +78,7 @@ export default function NewProductPage() {
             <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
               <TextField label="Title" value={title} onChange={(e) => setTitle(e.target.value)} sx={{ minWidth: 300 }} />
               <TextField label="Description" value={description} onChange={(e) => setDescription(e.target.value)} sx={{ minWidth: 300 }} />
-              <TextField type="number" label="Markup %" value={markupPct} onChange={(e) => setMarkupPct(Number(e.target.value))} sx={{ maxWidth: 160 }} />
+              <TextField type="number" label="Price ($)" value={price} onChange={(e) => setPrice(e.target.value)} sx={{ maxWidth: 160 }} />
             </Stack>
             <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
               <TextField type="number" label="Max Supply (Physical)" value={maxPhysical} onChange={(e) => setMaxPhysical(Number(e.target.value))} sx={{ maxWidth: 220 }} />

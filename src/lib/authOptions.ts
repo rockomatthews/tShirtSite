@@ -16,8 +16,13 @@ export const authOptions: NextAuthOptions = {
       if (token?.sub) {
         (session as any).userId = token.sub;
         try {
-          const u = await db.user.findUnique({ where: { id: token.sub }, select: { name: true, image: true, email: true } });
+          // Prefer lookup by our internal user id; fall back to email
+          let u = await db.user.findUnique({ where: { id: token.sub }, select: { id: true, name: true, image: true, email: true } });
+          if (!u && session.user?.email) {
+            u = await db.user.findUnique({ where: { email: session.user.email }, select: { id: true, name: true, image: true, email: true } });
+          }
           if (u) {
+            (session as any).userId = u.id;
             if (u.name) session.user!.name = u.name;
             if (u.image) session.user!.image = u.image as any;
             if (u.email) session.user!.email = u.email;

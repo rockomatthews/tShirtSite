@@ -8,13 +8,26 @@ import { createCollection } from "@/lib/crossmint";
 export async function POST(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions as any).catch(() => null);
-    const userId: string | undefined = (session as any)?.user?.id;
+    const sessUser = (session as any)?.user ?? {};
+    let userId: string | undefined = (session as any)?.userId || sessUser?.id;
+    if (!userId) {
+      const email: string | undefined = sessUser?.email;
+      if (email) {
+        const u = await db.user.upsert({
+          where: { email },
+          update: { name: sessUser?.name ?? undefined, image: sessUser?.image ?? undefined },
+          create: { email, name: sessUser?.name ?? null, image: sessUser?.image ?? null, role: "user" },
+        });
+        userId = u.id;
+      }
+    }
     if (!userId) return new Response("Unauthorized", { status: 401 });
 
     const form = await req.formData();
     const title = String(form.get("title") ?? "Untitled");
     const description = String(form.get("description") ?? "");
-    const markupPct = Number(form.get("markupPct") ?? 50);
+    const priceInput = String(form.get("price") ?? "").trim();
+    const priceCents = priceInput ? Math.round(Number(priceInput) * 100) : NaN;
     const maxSupplyPhysical = Number(form.get("maxSupplyPhysical") ?? 100);
     const maxSupplyVirtual = Number(form.get("maxSupplyVirtual") ?? 100);
     const sizesJson = String(form.get("sizes") ?? "[]");
@@ -73,7 +86,7 @@ export async function POST(req: NextRequest) {
     });
     const printifyProductId: string = String(created?.id ?? created?.data?.id ?? "");
 
-    const baseCost = 2000; // placeholder cents; ideally derive from provider variant pricing
+    const baseCost = Number.isFinite(priceCents) ? priceCents : 2000; // If price provided, use it as sale price for now
     const makeSlug = (t: string, id: string) => `${t}`.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 40) + "-" + id.slice(0, 6);
     const tempId = crypto.randomUUID();
     const genSlug = makeSlug(title, tempId);
@@ -84,7 +97,7 @@ export async function POST(req: NextRequest) {
         description,
         designId: design.id,
         baseCost,
-        markupPct,
+        markupPct: 0,
         maxSupplyPhysical,
         maxSupplyVirtual,
         variants: {
