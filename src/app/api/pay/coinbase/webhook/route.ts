@@ -22,7 +22,7 @@ export async function POST(req: NextRequest) {
   if (!orderId) return new Response("ok", { status: 200 });
 
   if (type === "charge:confirmed" || type === "charge:resolved") {
-    const order = await db.order.findUnique({ where: { id: orderId }, include: { items: { include: { productVariant: { include: { product: { include: { design: true } } } } } } } });
+    const order = await db.order.findUnique({ where: { id: orderId }, include: { user: true, items: { include: { productVariant: { include: { product: { include: { design: true } } } } } } } });
     if (!order) return new Response("ok", { status: 200 });
     // Mark paid
     await db.order.update({ where: { id: orderId }, data: { status: "paid" } });
