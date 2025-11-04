@@ -14,7 +14,7 @@ export async function GET(_req: NextRequest) {
   let designs: any[] = [];
   let dbError: string | null = null;
   try {
-    designs = await db.design.findMany({ where: { status: "pending" }, orderBy: { createdAt: "desc" } });
+    designs = await db.design.findMany({ where: { status: "pending" }, orderBy: { createdAt: "desc" }, include: { creator: { select: { name: true, email: true } } } });
   } catch (e: any) {
     dbError = e?.message ?? "db error";
   }
@@ -38,6 +38,7 @@ export async function GET(_req: NextRequest) {
         previewKey: p.previewKey ?? p.fileKey ?? undefined,
         status: p.status ?? "pending",
         tags: p.tags ?? [],
+        creator: p.creatorName || p.creatorEmail ? { name: p.creatorName ?? null, email: p.creatorEmail ?? null } : null,
         isBlobOnly: true,
       }));
     }

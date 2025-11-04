@@ -1,5 +1,5 @@
 "use client";
-import { Box, Button, Card, CardContent, CardHeader, Container, Stack, Typography } from "@mui/material";
+import { Box, Button, Card, CardContent, CardHeader, Container, Stack, TextField, Typography } from "@mui/material";
 import { useSession } from "next-auth/react";
 import { useEffect, useMemo, useRef, useState } from "react";
 
@@ -16,6 +16,8 @@ export default function DesignPage() {
   const [scale, setScale] = useState(0.5);
   const stageRef = useRef<HTMLDivElement>(null);
   const [isDragging, setDragging] = useState(false);
+  const [title, setTitle] = useState("");
+  const [description, setDescription] = useState("");
 
   // Stage and art base sizes (px)
   const STAGE_W = 420;
@@ -89,7 +91,8 @@ export default function DesignPage() {
     if (!uploadRes.ok) { alert("Upload failed"); return; }
     const { url } = await uploadRes.json();
     const fd = new FormData();
-    fd.append("title", "User Submitted Tee");
+    fd.append("title", title || "User Submitted Tee");
+    fd.append("description", description || "");
     fd.append("placement", JSON.stringify({ x, y, scale, bbox }));
     fd.append("fileUrl", url);
     const res = await fetch("/api/designs/upload", { method: "POST", body: fd });
@@ -108,6 +111,10 @@ export default function DesignPage() {
             </Stack>
           ) : (
           <Stack spacing={3}>
+            <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
+              <TextField fullWidth label="Title" value={title} onChange={(e) => setTitle(e.target.value)} required />
+              <TextField fullWidth label="Description" value={description} onChange={(e) => setDescription(e.target.value)} />
+            </Stack>
             <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
               <Button component="label" variant="outlined">Upload Artwork<input type="file" accept="image/*" hidden onChange={onFile} /></Button>
             </Stack>
