@@ -5,6 +5,7 @@ import { authOptions } from "@/lib/authOptions";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 import sharp from "sharp";
+import { put as blobPut } from "@vercel/blob";
 
 export async function POST(req: NextRequest) {
   try {
@@ -40,8 +41,19 @@ export async function POST(req: NextRequest) {
     } catch {
       out = Buffer.from(raw);
     }
-    const dataUrl = `data:${outMime};base64,${out.toString("base64")}`;
-    await db.user.update({ where: { id: userId }, data: { image: dataUrl } });
+    let imageVal: string;
+    try {
+      if (process.env.BLOB_READ_WRITE_TOKEN) {
+        const filename = `avatars/${userId}-${Date.now()}.webp`;
+        const putRes = await blobPut(filename, out, { access: "public", contentType: "image/webp" });
+        imageVal = putRes.url;
+      } else {
+        imageVal = `data:${outMime};base64,${out.toString("base64")}`;
+      }
+    } catch {
+      imageVal = `data:${outMime};base64,${out.toString("base64")}`;
+    }
+    await db.user.update({ where: { id: userId }, data: { image: imageVal } });
     return Response.json({ ok: true });
   } catch (e: any) {
     return new Response(`avatar upload failed: ${e?.message ?? "unknown"}`, { status: 502 });

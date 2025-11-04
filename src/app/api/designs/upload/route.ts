@@ -7,6 +7,7 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
 import sharp from "sharp";
+import { put as blobPut } from "@vercel/blob";
 
 export async function POST(req: NextRequest) {
   try {
@@ -36,25 +37,33 @@ export async function POST(req: NextRequest) {
     // Store submission only for admin review; limit payload size
     const raw = new Uint8Array(await file.arrayBuffer());
     const tooLarge = raw.byteLength > 6_000_000; // ~6MB guard
-    let outMime = (file.type || "image/png").toLowerCase();
-    if (!/^(image\/png|image\/jpeg|image\/webp)$/.test(outMime)) outMime = "image/png";
+    // Always convert to WebP and cap width for storage+transport
     let previewBytes: Buffer;
     try {
-      if (tooLarge) {
-        // Resize large images for preview to reduce DB payload
-        const pipeline = sharp(Buffer.from(raw)).rotate();
-        if (outMime === "image/jpeg") previewBytes = await pipeline.jpeg({ quality: 80 }).resize({ width: 1600, withoutEnlargement: true }).toBuffer();
-        else if (outMime === "image/webp") previewBytes = await pipeline.webp({ quality: 80 }).resize({ width: 1600, withoutEnlargement: true }).toBuffer();
-        else previewBytes = await pipeline.png({ compressionLevel: 9 }).resize({ width: 1600, withoutEnlargement: true }).toBuffer();
-      } else {
-        previewBytes = Buffer.from(raw);
-      }
+      const pipeline = sharp(Buffer.from(raw)).rotate().resize({ width: tooLarge ? 1280 : 1280, withoutEnlargement: true });
+      previewBytes = await pipeline.webp({ quality: 80 }).toBuffer();
     } catch {
       previewBytes = Buffer.from(raw);
     }
-    const dataUrl = `data:${outMime};base64,${previewBytes.toString("base64")}`;
-    const fileKey = dataUrl;
-    const previewKey = dataUrl;
+    let fileKey: string;
+    let previewKey: string;
+    try {
+      // Prefer Vercel Blob if token configured
+      if (process.env.BLOB_READ_WRITE_TOKEN) {
+        const filename = `designs/${Date.now()}-${Math.random().toString(36).slice(2)}.webp`;
+        const putRes = await blobPut(filename, previewBytes, { access: "public", contentType: "image/webp" });
+        fileKey = putRes.url;
+        previewKey = putRes.url;
+      } else {
+        const dataUrl = `data:image/webp;base64,${previewBytes.toString("base64")}`;
+        fileKey = dataUrl;
+        previewKey = dataUrl;
+      }
+    } catch {
+      const dataUrl = `data:image/webp;base64,${previewBytes.toString("base64")}`;
+      fileKey = dataUrl;
+      previewKey = dataUrl;
+    }
 
     // We keep placement inside tags for now to avoid DB migration timing issues
     const placementTag = `placement:${placementRaw}`;
