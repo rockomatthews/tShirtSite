@@ -39,13 +39,13 @@ export function Header() {
   return (
     <AppBar position="sticky" color="inherit" elevation={0} sx={{ borderBottom: 1, borderColor: "divider" }}>
       <Toolbar sx={{ gap: 2 }}>
-        {/* Mobile: hamburger, Desktop: logo text */}
+        {/* Mobile: hamburger, Desktop: logo image */}
         <IconButton onClick={() => setOpen(true)} sx={{ display: { xs: "inline-flex", md: "none" } }} aria-label="menu">
           <MenuIcon />
         </IconButton>
-        <Typography variant="h6" fontWeight={800} component={Link} href="/" sx={{ textDecoration: "none", color: "inherit", display: { xs: "none", md: "inline" } }}>
-          TeeHaus
-        </Typography>
+        <Box component={Link} href="/" sx={{ display: { xs: "none", md: "inline-flex" }, alignItems: "center" }}>
+          <Box component="img" src="/hanger.png" alt="HANGER.Graphics" sx={{ height: 36, width: "auto" }} />
+        </Box>
         <Box sx={{ flexGrow: 1 }} />
         <Stack direction="row" spacing={1}>
           {/* Desktop nav */}
