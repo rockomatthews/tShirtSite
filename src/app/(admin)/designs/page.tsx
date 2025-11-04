@@ -30,7 +30,7 @@ export default function ReviewDesignsPage() {
             <CardHeader title={d.title} subheader={d.description} />
             <CardContent>
               <Stack direction={{ xs: "column", sm: "row" }} spacing={2} alignItems="center">
-                <Box component="img" src={d.previewKey?.startsWith("data:") ? d.previewKey : undefined} alt="preview" sx={{ width: 140, height: 140, objectFit: "cover", borderRadius: 1, bgcolor: "#111" }} />
+                <Box component="img" src={d.previewKey || d.fileKey} alt="preview" sx={{ width: 140, height: 140, objectFit: "cover", borderRadius: 1, bgcolor: "#111" }} />
                 <TextField label="Mint (Physical)" type="number" defaultValue={100} id={`phys-${d.id}`} sx={{ maxWidth: 200 }} />
                 <TextField label="Mint (Virtual)" type="number" defaultValue={100} id={`virt-${d.id}`} sx={{ maxWidth: 200 }} />
                 <Button variant="contained" onClick={() => approve(
