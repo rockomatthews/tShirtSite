@@ -37,12 +37,8 @@ export async function POST(req: NextRequest) {
     const fileKey = dataUrl;
     const previewKey = dataUrl;
 
-    let placement: any = {};
-    try {
-      placement = JSON.parse(placementRaw);
-    } catch {
-      placement = {};
-    }
+    // We keep placement inside tags for now to avoid DB migration timing issues
+    const placementTag = `placement:${placementRaw}`;
     const design = await db.design.create({
       data: {
         title,
@@ -51,7 +47,7 @@ export async function POST(req: NextRequest) {
         previewKey,
         creatorId: userId,
         status: "pending",
-        placement,
+        tags: [placementTag],
       },
     });
     return Response.json({ id: design.id });
