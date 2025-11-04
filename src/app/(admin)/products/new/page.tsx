@@ -10,6 +10,7 @@ export default function NewProductPage() {
   const [maxVirtual, setMaxVirtual] = useState<number>(100);
   const [fileUrl, setFileUrl] = useState<string>("");
   const [fileObj, setFileObj] = useState<File | null>(null);
+  const [uploadedUrl, setUploadedUrl] = useState<string>("");
 
   const SIZES = ["S","M","L","XL","2XL","3XL"];
   const [sizes, setSizes] = useState<string[]>(["M","L","XL"]);
@@ -32,6 +33,24 @@ export default function NewProductPage() {
     const url = URL.createObjectURL(f);
     setFileUrl(url);
     setFileObj(f);
+    // Try direct-to-Blob to bypass serverless body limits
+    (async () => {
+      try {
+        const res = await fetch(`/api/uploads/blob?filename=${encodeURIComponent(f.name)}`, {
+          method: "POST",
+          headers: { "content-type": f.type || "application/octet-stream" },
+          body: f,
+        });
+        if (res.ok) {
+          const { url } = await res.json();
+          setUploadedUrl(url);
+        } else {
+          setUploadedUrl("");
+        }
+      } catch {
+        setUploadedUrl("");
+      }
+    })();
   };
   const clampXY = (nx: number, ny: number, s: number) => {
     const halfWRel = (ART_BASE_W * s) / (STAGE_W * 2);
@@ -64,7 +83,8 @@ export default function NewProductPage() {
     fd.append("maxSupplyVirtual", String(maxVirtual));
     fd.append("sizes", JSON.stringify(sizes));
     fd.append("placement", JSON.stringify({ x, y, scale, bbox }));
-    fd.append("file", fileObj);
+    if (uploadedUrl) fd.append("imageUrl", uploadedUrl);
+    else fd.append("file", fileObj);
     const res = await fetch("/api/admin/products/upload", { method: "POST", body: fd });
     if (res.ok) window.location.href = "/shop"; else alert("Create failed");
   };

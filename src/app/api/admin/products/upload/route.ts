@@ -33,14 +33,35 @@ export async function POST(req: NextRequest) {
     const sizesJson = String(form.get("sizes") ?? "[]");
     const sizes: string[] = (() => { try { return JSON.parse(sizesJson); } catch { return []; } })();
     const placement = String(form.get("placement") ?? "{}");
+    const imageUrl = (form.get("imageUrl") as string | null) || null;
     const file = form.get("file") as File | null;
-    if (!file || sizes.length === 0) return new Response("Bad request", { status: 400 });
+    if (!file && !imageUrl) return new Response("Bad request", { status: 400 });
 
-    const uploaded = await uploadImageToPrintify(file, file.name || "art.png");
+    // Prepare blob for Printify upload
+    let uploadBlob: Blob;
+    let uploadName = "art.png";
+    let previewDataUrl = "";
+    if (imageUrl && /^https?:\/\//.test(imageUrl)) {
+      const fetched = await fetch(imageUrl);
+      const buf = Buffer.from(await fetched.arrayBuffer());
+      const ctype = fetched.headers.get("content-type") || "image/png";
+      uploadBlob = new Blob([buf], { type: ctype });
+      const urlName = (new URL(imageUrl)).pathname.split("/").pop() || uploadName;
+      uploadName = urlName;
+      previewDataUrl = `data:${ctype};base64,${buf.toString("base64")}`;
+    } else {
+      // fall back to file from form
+      const f = file as File;
+      uploadBlob = f;
+      uploadName = f.name || uploadName;
+      const fileBuf = Buffer.from(await f.arrayBuffer());
+      previewDataUrl = `data:${f.type || "image/png"};base64,${fileBuf.toString("base64")}`;
+    }
+
+    const uploaded = await uploadImageToPrintify(uploadBlob, uploadName);
 
     // Build a data URL preview for UI rendering
-    const fileBuf = Buffer.from(await file.arrayBuffer());
-    const dataUrl = `data:${file.type || "image/png"};base64,${fileBuf.toString("base64")}`;
+    const dataUrl = previewDataUrl;
     const design = await db.design.create({
       data: {
         title,
