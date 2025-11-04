@@ -4,7 +4,7 @@ import { useMemo, useRef, useState } from "react";
 
 export default function NewProductPage() {
   const [title, setTitle] = useState("");
-  const [slug, setSlug] = useState("");
+  const [description, setDescription] = useState("");
   const [markupPct, setMarkupPct] = useState<number>(50);
   const [maxPhysical, setMaxPhysical] = useState<number>(100);
   const [maxVirtual, setMaxVirtual] = useState<number>(100);
@@ -55,10 +55,10 @@ export default function NewProductPage() {
   const onWheel = (e: React.WheelEvent) => { const d = e.deltaY < 0 ? 0.04 : -0.04; setScale((s) => Math.min(1.6, Math.max(0.2, s + d))); };
 
   const submit = async () => {
-    if (!fileObj || !title || !slug || sizes.length === 0) return;
+    if (!fileObj || !title || sizes.length === 0) return;
     const fd = new FormData();
     fd.append("title", title);
-    fd.append("slug", slug);
+    fd.append("description", description);
     fd.append("markupPct", String(markupPct));
     fd.append("maxSupplyPhysical", String(maxPhysical));
     fd.append("maxSupplyVirtual", String(maxVirtual));
@@ -77,7 +77,7 @@ export default function NewProductPage() {
           <Stack spacing={3}>
             <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
               <TextField label="Title" value={title} onChange={(e) => setTitle(e.target.value)} sx={{ minWidth: 300 }} />
-              <TextField label="Slug" value={slug} onChange={(e) => setSlug(e.target.value)} sx={{ minWidth: 200 }} />
+              <TextField label="Description" value={description} onChange={(e) => setDescription(e.target.value)} sx={{ minWidth: 300 }} />
               <TextField type="number" label="Markup %" value={markupPct} onChange={(e) => setMarkupPct(Number(e.target.value))} sx={{ maxWidth: 160 }} />
             </Stack>
             <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
@@ -106,7 +106,7 @@ export default function NewProductPage() {
               </Stack>
             </Box>
 
-            <Button variant="contained" onClick={submit} disabled={!fileUrl || !title || !slug || sizes.length === 0}>Submit TShirt</Button>
+            <Button variant="contained" onClick={submit} disabled={!fileUrl || !title || sizes.length === 0}>Submit TShirt</Button>
           </Stack>
         </CardContent>
       </Card>

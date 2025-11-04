@@ -114,12 +114,14 @@ export type PrintifyCreateOrderArgs = {
   imageId: string; // composed image id with serial
   placement: { x: number; y: number; scale: number };
   recipient: any; // Printify recipient shape
+  backOverlay?: { imageId: string; x: number; y: number; scale: number };
+  externalId?: string; // our order id for later webhook correlation
 };
 
 export async function createPrintifyOrder(args: PrintifyCreateOrderArgs) {
-  const { shopId, productId, variantId, quantity, imageId, placement, recipient } = args;
+  const { shopId, productId, variantId, quantity, imageId, placement, recipient, backOverlay, externalId } = args;
   const payload = {
-    external_id: `order_${Date.now()}`,
+    external_id: externalId || `order_${Date.now()}`,
     label: "Website Order",
     line_items: [
       {
@@ -136,6 +138,12 @@ export async function createPrintifyOrder(args: PrintifyCreateOrderArgs) {
                   { id: imageId, x: placement.x, y: placement.y, scale: placement.scale, angle: 0 },
                 ],
               },
+              ...(backOverlay ? [{
+                position: "back",
+                images: [
+                  { id: backOverlay.imageId, x: backOverlay.x, y: backOverlay.y, scale: backOverlay.scale, angle: 0 },
+                ],
+              }] : []),
             ],
           },
         ],

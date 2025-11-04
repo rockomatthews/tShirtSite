@@ -1,12 +1,12 @@
-type MintArgs = { orderItemId: string; recipient: string };
+type MintArgs = { collectionId: string; recipient: string; metadata: any };
 
 type CreateEmailWalletArgs = { email: string };
 
 export async function ensureEmailWallet({ email }: CreateEmailWalletArgs) {
   const apiKey = process.env.CROSSMINT_API_KEY;
   if (!apiKey) throw new Error("Missing CROSSMINT_API_KEY");
-  // Placeholder: Call Crossmint to create/get a wallet for the email
-  const res = await fetch("https://www.crossmint.com/api/placeholder/wallets", {
+  // Create/get email wallet
+  const res = await fetch("https://www.crossmint.com/api/2022-06-09/wallets/email", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -18,21 +18,28 @@ export async function ensureEmailWallet({ email }: CreateEmailWalletArgs) {
   return await res.json();
 }
 
-export async function crossmintMint(args: MintArgs) {
-  // Placeholder: Call Crossmint mint API after building metadata
+export async function createCollection({ name, image, description }: { name: string; image?: string | null; description?: string | null }) {
   const apiKey = process.env.CROSSMINT_API_KEY;
   if (!apiKey) throw new Error("Missing CROSSMINT_API_KEY");
-  // In production, build metadataUri + creators + royaltyBps, etc.
-  const res = await fetch("https://www.crossmint.com/api/placeholder", {
+  const res = await fetch("https://www.crossmint.com/api/2022-06-09/collections/solana", {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "X-API-KEY": apiKey,
-    },
-    body: JSON.stringify({ orderItemId: args.orderItemId, recipient: args.recipient }),
+    headers: { "Content-Type": "application/json", "X-API-KEY": apiKey },
+    body: JSON.stringify({ chain: "solana", name, description: description ?? undefined, image }),
   });
-  if (!res.ok) throw new Error(`Crossmint error ${res.status}`);
-  return await res.json();
+  if (!res.ok) throw new Error(`Crossmint collection error ${res.status}`);
+  return res.json();
+}
+
+export async function crossmintMint(args: MintArgs) {
+  const apiKey = process.env.CROSSMINT_API_KEY;
+  if (!apiKey) throw new Error("Missing CROSSMINT_API_KEY");
+  const res = await fetch(`https://www.crossmint.com/api/2022-06-09/collections/solana/${args.collectionId}/nfts`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", "X-API-KEY": apiKey },
+    body: JSON.stringify({ recipient: args.recipient.startsWith("email:") ? args.recipient : `email:${args.recipient}`, metadata: args.metadata }),
+  });
+  if (!res.ok) throw new Error(`Crossmint mint error ${res.status}`);
+  return res.json();
 }
 
 
