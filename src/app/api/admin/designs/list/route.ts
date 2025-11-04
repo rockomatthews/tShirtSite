@@ -3,41 +3,50 @@ import { db } from "@/lib/db";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/authOptions";
 import { list as blobList } from "@vercel/blob";
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
 
 export async function GET(_req: NextRequest) {
+  const session = await getServerSession(authOptions as any).catch(() => null);
+  const email = (session as any)?.user?.email?.toLowerCase?.() ?? "";
+  if (email !== "rob@fastwebwork.com") return new Response("Forbidden", { status: 403 });
+
+  let designs: any[] = [];
+  let dbError: string | null = null;
   try {
-    const session = await getServerSession(authOptions as any).catch(() => null);
-    const email = (session as any)?.user?.email?.toLowerCase?.() ?? "";
-    if (email !== "rob@fastwebwork.com") return new Response("Forbidden", { status: 403 });
-    const designs = await db.design.findMany({ where: { status: "pending" }, orderBy: { createdAt: "desc" } });
-    // Also include any Blob-saved submissions if DB was down when submitted
-    let blobSubmissions: any[] = [];
-    try {
-      if (process.env.BLOB_READ_WRITE_TOKEN) {
-        const blobs = await blobList({ prefix: "submissions/" });
-        const recent = blobs.blobs?.slice?.(-100) ?? [];
-        const jsons = await Promise.all(recent.map(async (b: any) => {
-          try {
-            const res = await fetch(b.url);
-            return await res.json();
-          } catch { return null; }
-        }));
-        blobSubmissions = jsons.filter(Boolean).map((p: any) => ({
-          id: p.id ?? p.createdAt,
-          title: p.title ?? "Untitled",
-          description: p.description ?? "",
-          previewKey: p.previewKey ?? p.fileKey ?? undefined,
-          status: p.status ?? "pending",
-          tags: p.tags ?? [],
-          isBlobOnly: true,
-        }));
-      }
-    } catch {}
-    const all = [...blobSubmissions, ...designs];
-    return Response.json({ designs: all });
+    designs = await db.design.findMany({ where: { status: "pending" }, orderBy: { createdAt: "desc" } });
   } catch (e: any) {
-    return new Response(`List failed: ${e?.message ?? "unknown"}`, { status: 500 });
+    dbError = e?.message ?? "db error";
   }
+
+  let blobSubmissions: any[] = [];
+  let blobError: string | null = null;
+  try {
+    if (process.env.BLOB_READ_WRITE_TOKEN) {
+      const blobs = await blobList({ prefix: "submissions/" });
+      const recent = blobs.blobs?.slice?.(-100) ?? [];
+      const jsons = await Promise.all(recent.map(async (b: any) => {
+        try {
+          const res = await fetch(b.url);
+          return await res.json();
+        } catch { return null; }
+      }));
+      blobSubmissions = jsons.filter(Boolean).map((p: any) => ({
+        id: p.id ?? p.createdAt,
+        title: p.title ?? "Untitled",
+        description: p.description ?? "",
+        previewKey: p.previewKey ?? p.fileKey ?? undefined,
+        status: p.status ?? "pending",
+        tags: p.tags ?? [],
+        isBlobOnly: true,
+      }));
+    }
+  } catch (e: any) {
+    blobError = e?.message ?? "blob error";
+  }
+
+  const all = [...blobSubmissions, ...designs];
+  return Response.json({ designs: all, meta: { dbError, blobError } });
 }
 
 
