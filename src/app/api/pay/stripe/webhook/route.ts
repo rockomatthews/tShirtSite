@@ -22,7 +22,7 @@ export async function POST(req: NextRequest) {
     const pi = event.data.object;
     const orderId = pi.metadata?.orderId as string | undefined;
     if (orderId) {
-      const order = await db.order.findUnique({ where: { id: orderId }, include: { items: { include: { productVariant: { include: { product: { include: { design: true } } } } } } } });
+      const order = await db.order.findUnique({ where: { id: orderId }, include: { user: true, items: { include: { productVariant: { include: { product: { include: { design: true } } } } } } } });
       if (order) {
         await db.order.update({ where: { id: orderId }, data: { status: "paid" } });
         const item = order.items[0];
