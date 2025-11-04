@@ -4,6 +4,9 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/authOptions";
 
 export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
+export const maxDuration = 60;
+import sharp from "sharp";
 
 export async function POST(req: NextRequest) {
   try {
@@ -30,15 +33,33 @@ export async function POST(req: NextRequest) {
     const placementRaw = String(form.get("placement") ?? "{}");
     if (!file) return new Response("File required", { status: 400 });
 
-    // Store submission only for admin review; no external calls here
-    const buf = Buffer.from(await file.arrayBuffer());
-    const mime = file.type || "image/png";
-    const dataUrl = `data:${mime};base64,${buf.toString("base64")}`;
+    // Store submission only for admin review; limit payload size
+    const raw = new Uint8Array(await file.arrayBuffer());
+    const tooLarge = raw.byteLength > 6_000_000; // ~6MB guard
+    let outMime = (file.type || "image/png").toLowerCase();
+    if (!/^(image\/png|image\/jpeg|image\/webp)$/.test(outMime)) outMime = "image/png";
+    let previewBytes: Buffer;
+    try {
+      if (tooLarge) {
+        // Resize large images for preview to reduce DB payload
+        const pipeline = sharp(Buffer.from(raw)).rotate();
+        if (outMime === "image/jpeg") previewBytes = await pipeline.jpeg({ quality: 80 }).resize({ width: 1600, withoutEnlargement: true }).toBuffer();
+        else if (outMime === "image/webp") previewBytes = await pipeline.webp({ quality: 80 }).resize({ width: 1600, withoutEnlargement: true }).toBuffer();
+        else previewBytes = await pipeline.png({ compressionLevel: 9 }).resize({ width: 1600, withoutEnlargement: true }).toBuffer();
+      } else {
+        previewBytes = Buffer.from(raw);
+      }
+    } catch {
+      previewBytes = Buffer.from(raw);
+    }
+    const dataUrl = `data:${outMime};base64,${previewBytes.toString("base64")}`;
     const fileKey = dataUrl;
     const previewKey = dataUrl;
 
     // We keep placement inside tags for now to avoid DB migration timing issues
     const placementTag = `placement:${placementRaw}`;
+    const sizeTag = `bytes:${raw.byteLength}`;
+    const originalTag = tooLarge ? "needsOriginalOnApproval:true" : "needsOriginalOnApproval:false";
     const design = await db.design.create({
       data: {
         title,
@@ -47,7 +68,7 @@ export async function POST(req: NextRequest) {
         previewKey,
         creatorId: userId,
         status: "pending",
-        tags: [placementTag],
+        tags: [placementTag, sizeTag, originalTag],
       },
     });
     return Response.json({ id: design.id });
