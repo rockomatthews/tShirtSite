@@ -13,8 +13,10 @@ export async function POST(req: NextRequest) {
     const sessUser = (session as any)?.user ?? {};
     let email: string | undefined = sessUser?.email;
     if (!email) {
-      const token = await getToken({ req: req as any, secret: process.env.NEXTAUTH_SECRET });
-      email = (token as any)?.email as string | undefined;
+      try {
+        const token = await getToken({ req: req as any });
+        email = (token as any)?.email as string | undefined;
+      } catch {}
     }
     if (!email) return new Response("unauthorized: no email", { status: 401 });
 
