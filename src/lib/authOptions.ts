@@ -48,8 +48,17 @@ export const authOptions: NextAuthOptions = {
   events: {
     async signIn(message) {
       try {
-        const email: string | undefined = (message as any)?.user?.email;
-        if (email) await ensureEmailWallet({ email });
+        const u: any = (message as any)?.user ?? {};
+        const email: string | undefined = u?.email;
+        if (email) {
+          await ensureEmailWallet({ email });
+          // Ensure our User row exists/updates on each sign-in
+          await db.user.upsert({
+            where: { email },
+            update: { name: u?.name ?? undefined, image: (u?.image ?? u?.picture ?? undefined) as any },
+            create: { email, name: u?.name ?? null, image: (u?.image ?? u?.picture ?? null) as any, role: "user" },
+          });
+        }
       } catch {}
     },
   },

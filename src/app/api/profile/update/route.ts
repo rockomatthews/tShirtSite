@@ -45,7 +45,9 @@ export async function POST(req: NextRequest) {
     }
     return Response.json({ ok: true });
   } catch (e: any) {
-    return new Response(`update failed: ${e?.message ?? "unknown"}`, { status: 500 });
+    const msg = e?.message ?? "unknown";
+    const stack = e?.stack ?? "";
+    return new Response(`update failed: ${msg}\n${stack}`, { status: 500 });
   }
 }
 
