@@ -23,8 +23,13 @@ export async function POST(req: NextRequest) {
     const body = await req.json().catch(() => ({}));
     const name = typeof body?.name === "string" ? body.name.trim().slice(0, 80) : undefined;
     if (!name) return new Response("bad request", { status: 400 });
-    // Upsert by email to avoid id mismatch issues
-    await db.user.upsert({ where: { email }, update: { name }, create: { email, name, role: "user" } });
+    // Robust update: update if exists, else create
+    const existing = await db.user.findUnique({ where: { email } }).catch(() => null);
+    if (existing) {
+      await db.user.update({ where: { id: existing.id }, data: { name } });
+    } else {
+      await db.user.create({ data: { email, name, role: "user" } });
+    }
     return Response.json({ ok: true });
   } catch (e: any) {
     return new Response(`update failed: ${e?.message ?? "unknown"}`, { status: 500 });
