@@ -89,7 +89,7 @@ export function Header() {
               <input ref={fileInputRef} type="file" accept="image/*" hidden onChange={onFile} />
             </>
           ) : (
-            <Button component={Link} href="/login">Sign in</Button>
+            <Button component={Link} href="/signin">Sign in</Button>
           )}
         </Stack>
       </Toolbar>

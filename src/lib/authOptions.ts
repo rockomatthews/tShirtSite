@@ -29,6 +29,27 @@ export const authOptions: NextAuthOptions = {
         if ((token as any).picture) session.user.image = (token as any).picture as any;
         if (token.email) session.user.email = token.email as any;
       }
+      // Ensure a User row exists on each session refresh (Data API first, then Prisma)
+      try {
+        const email = session.user?.email as string | undefined;
+        if (email) {
+          const name = session.user?.name ?? null;
+          const image = (session.user?.image as any) ?? null;
+          try {
+            const { dataApiAvailable, dataApiUpsertUserByEmail } = await import("@/lib/dataApi");
+            if (await dataApiAvailable()) {
+              await dataApiUpsertUserByEmail(email, name as any, image as any);
+            } else {
+              const { db } = await import("@/lib/db");
+              await db.user.upsert({
+                where: { email },
+                update: { name: name ?? undefined, image: image ?? undefined },
+                create: { email, name: name as any, image: image as any, role: "user" },
+              });
+            }
+          } catch {}
+        }
+      } catch {}
       return session;
     },
   },
