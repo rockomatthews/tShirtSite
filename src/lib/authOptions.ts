@@ -56,12 +56,15 @@ export const authOptions: NextAuthOptions = {
           await ensureEmailWallet({ email });
           // Ensure our User row exists/updates on each sign-in
           try {
-            const { db } = await import("@/lib/db");
-            await db.user.upsert({
-              where: { email },
-              update: { name: u?.name ?? undefined, image: (u?.image ?? u?.picture ?? undefined) as any },
-              create: { email, name: u?.name ?? null, image: (u?.image ?? u?.picture ?? null) as any, role: "user" },
-            });
+            const { getSql } = await import("@/lib/neon");
+            const sql: any = await getSql();
+            const name = u?.name ?? null;
+            const image = (u?.image ?? u?.picture ?? null) as any;
+            await sql(
+              'INSERT INTO "User" (email, name, image, role) VALUES (lower($1), $2, $3, $4)\n' +
+              'ON CONFLICT (email) DO UPDATE SET name = EXCLUDED.name, image = EXCLUDED.image',
+              [email, name, image, 'user']
+            );
           } catch {}
         }
       } catch {}
