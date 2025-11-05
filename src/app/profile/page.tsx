@@ -13,7 +13,7 @@ export default function ProfilePage() {
   const [saving, setSaving] = useState(false);
   const saveName = async () => {
     setSaving(true);
-    await fetch("/api/profile/update", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ name: editingName }) });
+    await fetch("/api/profile/name", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ name: editingName }) });
     // Refresh session from token/db so UI reflects the new name
     try { await update?.(); } catch {}
     setSaving(false);
