@@ -54,17 +54,22 @@ export const authOptions: NextAuthOptions = {
         const email: string | undefined = u?.email;
         if (email) {
           await ensureEmailWallet({ email });
-          // Ensure our User row exists/updates on each sign-in
+          // Ensure our User row exists/updates on each sign-in (Data API first, then driver)
+          const name = u?.name ?? null;
+          const image = (u?.image ?? u?.picture ?? null) as any;
           try {
-            const { getSql } = await import("@/lib/neon");
-            const sql: any = await getSql();
-            const name = u?.name ?? null;
-            const image = (u?.image ?? u?.picture ?? null) as any;
-            await sql(
-              'INSERT INTO "User" (email, name, image, role) VALUES (lower($1), $2, $3, $4)\n' +
-              'ON CONFLICT (email) DO UPDATE SET name = EXCLUDED.name, image = EXCLUDED.image',
-              [email, name, image, 'user']
-            );
+            const { dataApiAvailable, dataApiUpsertUserByEmail } = await import("@/lib/dataApi");
+            if (await dataApiAvailable()) {
+              await dataApiUpsertUserByEmail(email, name, image);
+            } else {
+              const { getSql } = await import("@/lib/neon");
+              const sql: any = await getSql();
+              await sql(
+                'INSERT INTO "User" (email, name, image, role) VALUES (lower($1), $2, $3, $4)\n' +
+                'ON CONFLICT (email) DO UPDATE SET name = EXCLUDED.name, image = EXCLUDED.image',
+                [email, name, image, 'user']
+              );
+            }
           } catch {}
         }
       } catch {}
