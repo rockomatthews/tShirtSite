@@ -1,7 +1,6 @@
 import type { NextAuthOptions } from "next-auth";
 import Google from "next-auth/providers/google";
 import { ensureEmailWallet } from "@/lib/crossmint";
-import { db } from "@/lib/db";
 
 export const authOptions: NextAuthOptions = {
   providers: [
@@ -24,13 +23,16 @@ export const authOptions: NextAuthOptions = {
       try {
         const email = (token.email as string) || undefined;
         if (email) {
-          const u = await db.user.findUnique({ where: { email }, select: { id: true, name: true, image: true, email: true } });
-          if (u) {
-            (token as any).uid = u.id; // our app userId
-            if (u.name) token.name = u.name as any;
-            if (u.image) token.picture = u.image as any;
-            token.email = u.email as any;
-          }
+          try {
+            const { db } = await import("@/lib/db");
+            const u = await db.user.findUnique({ where: { email }, select: { id: true, name: true, image: true, email: true } });
+            if (u) {
+              (token as any).uid = u.id; // our app userId
+              if (u.name) token.name = u.name as any;
+              if (u.image) token.picture = u.image as any;
+              token.email = u.email as any;
+            }
+          } catch {}
         }
       } catch {}
       return token;
@@ -53,11 +55,14 @@ export const authOptions: NextAuthOptions = {
         if (email) {
           await ensureEmailWallet({ email });
           // Ensure our User row exists/updates on each sign-in
-          await db.user.upsert({
-            where: { email },
-            update: { name: u?.name ?? undefined, image: (u?.image ?? u?.picture ?? undefined) as any },
-            create: { email, name: u?.name ?? null, image: (u?.image ?? u?.picture ?? null) as any, role: "user" },
-          });
+          try {
+            const { db } = await import("@/lib/db");
+            await db.user.upsert({
+              where: { email },
+              update: { name: u?.name ?? undefined, image: (u?.image ?? u?.picture ?? undefined) as any },
+              create: { email, name: u?.name ?? null, image: (u?.image ?? u?.picture ?? null) as any, role: "user" },
+            });
+          } catch {}
         }
       } catch {}
     },
