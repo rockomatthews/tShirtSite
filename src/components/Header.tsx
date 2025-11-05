@@ -49,8 +49,8 @@ export function Header() {
     <AppBar position="sticky" color="inherit" elevation={0} sx={{ borderBottom: 1, borderColor: "divider" }}>
       <Toolbar sx={{ gap: 2 }}>
         {/* Mobile: hamburger, Desktop: logo image */}
-        <IconButton onClick={() => setOpen(true)} sx={{ display: { xs: "inline-flex", md: "none" } }} aria-label="menu">
-          <MenuIcon />
+        <IconButton onClick={() => setOpen(true)} sx={{ display: { xs: "inline-flex", md: "none" }, p: 0.5 }} aria-label="menu">
+          <Box component="img" src="/hangerSolo.png" alt="Menu" sx={{ height: 28, width: 28 }} />
         </IconButton>
         <Box component={Link} href="/" sx={{ display: { xs: "none", md: "inline-flex" }, alignItems: "center" }}>
           <Box component="img" src="/hangerSolo.png" alt="HANGER.Graphics" sx={{ height: 36, width: "auto" }} />
