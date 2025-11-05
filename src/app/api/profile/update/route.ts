@@ -3,7 +3,6 @@ import { getServerSession } from "next-auth";
 import { getToken } from "next-auth/jwt";
 import { authOptions } from "@/lib/authOptions";
 import { db } from "@/lib/db";
-import { getSql } from "@/lib/neon";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -37,9 +36,18 @@ export async function POST(req: NextRequest) {
         return Response.json({ ok: true });
       }
     } catch {}
-    const sql: any = await getSql();
-    await sql('UPDATE "User" SET name = $2 WHERE lower(email) = lower($1)', [email, name]);
-    return Response.json({ ok: true });
+    // Fallback to Prisma
+    try {
+      const existing = await db.user.findUnique({ where: { email } });
+      if (existing) {
+        await db.user.update({ where: { id: existing.id }, data: { name } });
+      } else {
+        await db.user.create({ data: { email: email.toLowerCase(), name, role: "user" } });
+      }
+      return Response.json({ ok: true });
+    } catch (e: any) {
+      throw e;
+    }
   } catch (e: any) {
     const msg = e?.message ?? "unknown";
     const stack = e?.stack ?? "";
