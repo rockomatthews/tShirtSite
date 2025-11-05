@@ -20,9 +20,14 @@ function withNeonParams(urlRaw: string | undefined): string | undefined {
   }
 }
 
-const runtimeUrl = withNeonParams(process.env.DATABASE_URL || process.env.POSTGRES_URL || process.env.POSTGRES_PRISMA_URL);
+const runtimeUrl = withNeonParams(process.env.DATABASE_URL || process.env.POSTGRES_PRISMA_URL || process.env.POSTGRES_URL);
 
-export const db = global.prisma ?? new PrismaClient({ datasources: { db: { url: runtimeUrl } } as any });
+// Ensure Prisma sees a valid DATABASE_URL at runtime
+if (runtimeUrl && (/^postgres(ql)?:\/\//i).test(runtimeUrl)) {
+  process.env.DATABASE_URL = runtimeUrl;
+}
+
+export const db = global.prisma ?? new PrismaClient({ datasources: { db: { url: process.env.DATABASE_URL } } as any });
 if (process.env.NODE_ENV !== "production") global.prisma = db;
 
 
