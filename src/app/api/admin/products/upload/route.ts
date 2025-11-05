@@ -5,6 +5,10 @@ import { authOptions } from "@/lib/authOptions";
 import { uploadImageToPrintify, getBlueprintsV2, getProvidersForBlueprintV2, getVariantsForProviderV1, getDefaultShopId, createPrintifyProduct } from "@/lib/printify";
 import { createCollection } from "@/lib/crossmint";
 
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
+export const maxDuration = 60;
+
 export async function POST(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions as any).catch(() => null);
